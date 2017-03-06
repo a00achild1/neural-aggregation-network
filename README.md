@@ -3,9 +3,11 @@
 Not stable! Caution to use.
 
 Paper:
-J. Yang, P. Ren, D. Chen, et al. Neural aggregation network for video face recognition. arXiv preprint arXiv:1603.05474, 2016.
+
+    J. Yang, P. Ren, D. Chen, et al. Neural aggregation network for video face recognition. arXiv preprint arXiv:1603.05474, 2016.
 
 Usage:
+
     layer {
         name: "attention_block0"
         type: "AttentionBlock"
