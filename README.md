@@ -1,26 +1,55 @@
-# Caffe
+# Neural Aggregation Network for Video Face Recogtion
 
-[![Build Status](https://travis-ci.org/BVLC/caffe.svg?branch=master)](https://travis-ci.org/BVLC/caffe)
-[![License](https://img.shields.io/badge/license-BSD-blue.svg)](LICENSE)
+Not stable! Caution to use.
 
-Caffe is a deep learning framework made with expression, speed, and modularity in mind.
-It is developed by the Berkeley Vision and Learning Center ([BVLC](http://bvlc.eecs.berkeley.edu)) and community contributors.
+Paper:
+J. Yang, P. Ren, D. Chen, et al. Neural aggregation network for video face recognition. arXiv preprint arXiv:1603.05474, 2016.
 
-Check out the [project site](http://caffe.berkeleyvision.org) for all the details like
+Usage:
+    layer {
+        name: "attention_block0"
+        type: "AttentionBlock"
+        bottom: "feature"
+        top: "embedded_feature0"
+        param {
+            lr_mult: 1
+        }
+    }
 
-- [DIY Deep Learning for Vision with Caffe](https://docs.google.com/presentation/d/1UeKXVgRvvxg9OUdh_UiC5G71UMscNPlvArsWER41PsU/edit#slide=id.p)
-- [Tutorial Documentation](http://caffe.berkeleyvision.org/tutorial/)
-- [BVLC reference models](http://caffe.berkeleyvision.org/model_zoo.html) and the [community model zoo](https://github.com/BVLC/caffe/wiki/Model-Zoo)
-- [Installation instructions](http://caffe.berkeleyvision.org/installation.html)
+    layer {
+        name: "embedding_kernel1"
+        type: "InnerProduct"
+        bottom: "embedding_feature0"
+        top: "embedding_kernel1"
+        param {
+            lr_mult: 1
+        }
+        inner_product_param {
+            num_output: 1
+            axis: 0
+            weight_filler {
+                type: "xavier"
+            }
+            bias_filler {
+                type: "constant"
+            }
+        }
+    }
 
-and step-by-step examples.
+    layer {
+        name: "embedding_tanh"
+        type: "Tanh"
+        bottom: "embedding_kernel1"
+        top: "embedding_kernel1"
+    }
 
-[![Join the chat at https://gitter.im/BVLC/caffe](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/BVLC/caffe?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
-Please join the [caffe-users group](https://groups.google.com/forum/#!forum/caffe-users) or [gitter chat](https://gitter.im/BVLC/caffe) to ask questions and talk about methods and models.
-Framework development discussions and thorough bug reports are collected on [Issues](https://github.com/BVLC/caffe/issues).
-
-Happy brewing!
+    layer {
+        name: "attention_block1"
+        type: "AttentionBlock"
+        bottom: "feature"
+        bottom: "embedding_kernel1"
+        top: "embedded_feature1"
+    }
 
 ## License and Citation
 
