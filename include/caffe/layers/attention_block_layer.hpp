@@ -41,8 +41,6 @@ class AttentionBlockLayer : public Layer<Dtype> {
   int K_;
   int N_;
   shared_ptr<Layer<Dtype> > softmax_layer_;
-  /// The internal SoftmaxLayer used to map predictions to a distribution.
-  shared_ptr<Layer<Dtype> > softmax_layer_;
   /// attention stores the attention predictions from features.
   /// prob stores the output probability predictions from the SoftmaxLayer.
   Blob<Dtype> prob_, attention_; 

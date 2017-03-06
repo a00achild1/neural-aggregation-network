@@ -11,8 +11,8 @@ template <typename Dtype>
 void AttentionBlockLayer<Dtype>::Forward_gpu(
     const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) {
   const Dtype* bottom_data = bottom[0]->gpu_data();
-  Dtype* attention_data = attention_.gpu_data();
-  Dtype* prob_data = prob_.gpu_data();
+  Dtype* attention_data = attention_.mutable_gpu_data();
+  Dtype* prob_data = prob_.mutable_gpu_data();
   Dtype* top_data = top[0]->mutable_gpu_data();
   if (bottom.size() < 2)
   {
@@ -33,8 +33,8 @@ template <typename Dtype>
 void AttentionBlockLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
     const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom) {
   const Dtype* top_diff = top[0]->gpu_diff();
-  Dtype* prob_diff = prob_->gpu_diff();
-  Dtype* attention_diff = attention_->gpu_diff();
+  Dtype* prob_diff = prob_->mutable_gpu_diff();
+  const Dtype* attention_diff = attention_->gpu_diff();
   const Dtype* bottom_data = bottom[0]->gpu_data();
 
   caffe_gpu_gemm<Dtype>(CblasNoTrans, CblasTrans, M_, K_, N_, (Dtype)1., 

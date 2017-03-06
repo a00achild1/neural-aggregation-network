@@ -2,6 +2,7 @@
 #include <cfloat>
 #include <vector>
 
+#include "caffe/filler.hpp"
 #include "caffe/layers/attention_block_layer.hpp"
 #include "caffe/util/math_functions.hpp"
 
@@ -49,7 +50,7 @@ void AttentionBlockLayer<Dtype>::Reshape(
       << "Input size incompatible with inner product parameters.";
   // The first "axis" dimensions are independent inner products; the total
   // number of these is M_, the product over these dimensions.
-  M_ = bottom->count(0, 1);
+  M_ = bottom[0]->count(0, 1);
   // The top shape will be the bottom shape with the flattened axes dropped,
   // and replaced by a single axis with dimension N_.
   if (bottom.size() == 2) 
@@ -57,14 +58,14 @@ void AttentionBlockLayer<Dtype>::Reshape(
     vector<int> kernel_shape;
     kernel_shape[0] = K_;
     kernel_shape[1] = N_;
-    bottom[0]->reshape(kernel_shape);
+    bottom[0]->Reshape(kernel_shape);
   }
 
   softmax_layer_->Reshape(softmax_bottom_vec_, softmax_top_vec_);
 
   vector<int> top_shape = bottom[0]->shape();
   top_shape.resize(2);
-  top_shape[axis] = N_;
+  top_shape[1] = N_;
   top[0]->Reshape(top_shape);
 }
 
@@ -72,8 +73,8 @@ template <typename Dtype>
 void AttentionBlockLayer<Dtype>::Forward_cpu(
     const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) {
   const Dtype* bottom_data = bottom[0]->cpu_data();
-  Dtype* attention_data = attention_.cpu_data();
-  Dtype* prob_data = prob_.cpu_data();
+  Dtype* attention_data = attention_.mutable_cpu_data();
+  Dtype* prob_data = prob_.mutable_cpu_data();
   Dtype* top_data = top[0]->mutable_cpu_data();
   if (bottom.size() < 2)
   {
@@ -83,7 +84,6 @@ void AttentionBlockLayer<Dtype>::Forward_cpu(
   {
     const Dtype* kernel = bottom[1]->cpu_data();
   }
-  caffe_cpu_gemv<Dtype>
   caffe_cpu_gemm<Dtype>(CblasNoTrans, CblasNoTrans, M_, N_, K_, (Dtype)1., 
     bottom_data, kernel, (Dtype)0., attention_data);
   softmax_layer_->Forward(softmax_bottom_vec_, softmax_top_vec_);
@@ -95,8 +95,8 @@ template <typename Dtype>
 void AttentionBlockLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
     const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom) {
   const Dtype* top_diff = top[0]->cpu_diff();
-  Dtype* prob_diff = prob_->cpu_diff();
-  Dtype* attention_diff = attention_->cpu_diff();
+  Dtype* prob_diff = prob_.mutable_cpu_diff();
+  const Dtype* attention_diff = attention_.cpu_diff();
   const Dtype* bottom_data = bottom[0]->cpu_data();
 
   caffe_cpu_gemm<Dtype>(CblasNoTrans, CblasTrans, M_, K_, N_, (Dtype)1., 
