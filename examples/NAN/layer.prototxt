@@ -1,0 +1,44 @@
+layer {
+    name: "attention_block0"
+    type: "AttentionBlock"
+    bottom: "feature"
+    top: "embedded_feature0"
+    param {
+        lr_mult: 1
+    }
+}
+
+layer {
+    name: "embedding_kernel1"
+    type: "InnerProduct"
+    bottom: "embedding_feature0"
+    top: "embedding_kernel1"
+    param {
+        lr_mult: 1
+    }
+    inner_product_param {
+        num_output: 1
+        axis: 0
+        weight_filler {
+            type: "xavier"
+        }
+        bias_filler {
+            type: "constant"
+        }
+    }
+}
+
+layer {
+    name: "embedding_tanh"
+    type: "Tanh"
+    bottom: "embedding_kernel1"
+    top: "embedding_kernel1"
+}
+
+layer {
+    name: "attention_block1"
+    type: "AttentionBlock"
+    bottom: "feature"
+    bottom: "embedding_kernel1"
+    top: "embedded_feature1"
+}
