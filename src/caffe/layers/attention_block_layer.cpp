@@ -24,17 +24,19 @@ void AttentionBlockLayer<Dtype>::LayerSetUp(
       weight_shape[1] = N_;
       this->blobs_[0].reset(new Blob<Dtype>(weight_shape));
       // fill the weights
-      shared_ptr<Filler<Dtype> > weight_filler(GetFiller<Dtype>(
-          this->layer_param_.attention_block_param().weight_filler()));
-      weight_filler->Fill(this->blobs_[0].get());
+      shared_ptr<Filler<Dtype> > filler(GetFiller<Dtype>(
+          this->layer_param_.attention_block_param().filler()));
+      filler->Fill(this->blobs_[0].get());
     }
     this->param_propagate_down_.resize(this->blobs_.size(), true);
   }
 
-  LayerParameter softmax_param_(this->layer_param_);
-  softmax_param_.set_type("Softmax");
-  softmax_param_.set_axis(0);
-  softmax_layer_ = LayerRegistry<Dtype>::CreateLayer(softmax_param_);
+  LayerParameter softmax_layer_param_(this->layer_param_);
+  softmax_layer_param_.set_type("Softmax");
+  SoftmaxParameter* softmax_param_ = softmax_layer_param_.mutable_softmax_param();
+  softmax_param_->set_axis(0);
+
+  softmax_layer_ = LayerRegistry<Dtype>::CreateLayer(softmax_layer_param_);
   softmax_bottom_vec_.clear();
   softmax_bottom_vec_.push_back(&attention_);
   softmax_top_vec_.clear();
@@ -76,14 +78,8 @@ void AttentionBlockLayer<Dtype>::Forward_cpu(
   Dtype* attention_data = attention_.mutable_cpu_data();
   Dtype* prob_data = prob_.mutable_cpu_data();
   Dtype* top_data = top[0]->mutable_cpu_data();
-  if (bottom.size() < 2)
-  {
-    const Dtype* kernel = this->blobs_[0]->cpu_data();
-  }
-  else
-  {
-    const Dtype* kernel = bottom[1]->cpu_data();
-  }
+  const Dtype* kernel = (bottom.size() < 2) ? this->blobs_[0]->cpu_data() : bottom[1]->cpu_data();
+  
   caffe_cpu_gemm<Dtype>(CblasNoTrans, CblasNoTrans, M_, N_, K_, (Dtype)1., 
     bottom_data, kernel, (Dtype)0., attention_data);
   softmax_layer_->Forward(softmax_bottom_vec_, softmax_top_vec_);
@@ -98,13 +94,14 @@ void AttentionBlockLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
   Dtype* prob_diff = prob_.mutable_cpu_diff();
   const Dtype* attention_diff = attention_.cpu_diff();
   const Dtype* bottom_data = bottom[0]->cpu_data();
+  const Dtype* kernel = (bottom.size() < 2) ? this->blobs_[0]->cpu_data() : bottom[1]->cpu_data();
 
   caffe_cpu_gemm<Dtype>(CblasNoTrans, CblasTrans, M_, K_, N_, (Dtype)1., 
     bottom_data, top_diff, (Dtype)0., prob_diff);
   softmax_layer_->Backward(softmax_top_vec_, propagate_down, softmax_bottom_vec_);
-  if (this->param_propagate_down_) {
+  if (this->param_propagate_down_[0]) {
     caffe_cpu_gemm<Dtype>(CblasTrans, CblasNoTrans, K_, N_, M_, (Dtype)1., 
-      bottom_data, attention_diff, (Dtype)0., this->blobs_[0]->mutable_cpu_diff());
+      bottom_data, attention_diff, (Dtype)1., this->blobs_[0]->mutable_cpu_diff());
   }
   if (propagate_down[1]) {
     caffe_cpu_gemm<Dtype>(CblasTrans, CblasNoTrans, K_, N_, M_, (Dtype)1., 
